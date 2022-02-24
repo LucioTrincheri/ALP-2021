@@ -7,8 +7,8 @@ import           Common
 class Monad m => MonadState m where
     -- Busca el valor de una variable
     lookforStates :: m [State] -- Devuelve todos los estados
-    lookforTransicion :: m [Transition]
-    lookforValuation :: m [Valuation]
+    lookforTransitions :: State -> m [State]
+    lookforValuations :: Prop -> m [State]
     -- Cambia el valor de una variable
     updateStates :: [State] -> m ()
     updateTransitions :: [Transition] -> m ()

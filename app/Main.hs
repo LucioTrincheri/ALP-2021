@@ -9,20 +9,26 @@ import           Prelude                 hiding ( print )
 import           System.Console.Haskeline
 import qualified Control.Monad.Catch           as MC
 import           System.Environment
-import           System.IO               hiding ( print )
+import           System.IO               --hiding ( print )
 import           Text.PrettyPrint.HughesPJ      ( render
                                                 , text
                                                 )
 import Control.Monad.IO.Class
 import Parse
 import Common
+import Eval
 --import Eval
 import Data.Set
 import Data.List
+
 --import PPrint
 
 parseModel :: String -> Comm
 parseModel contents = func $ lexerComm contents
+
+evalModel contents = case (eval contents initEnv) of
+                            (Left err, env') -> (print err)
+                            (Right s, env') -> print s
 
 main :: IO ()
 main = do putChar 'c'

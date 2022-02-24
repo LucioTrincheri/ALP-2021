@@ -28,4 +28,4 @@ data CTL =  Prop Prop
 
 data Comm = CTL CTL | States [State] | Valuations [Valuation] | Transitions [Transition] deriving (Show)
 
-data Error = OperOverEmpty deriving (Eq, Show)
+data Error = OperOverEmpty | UndefState deriving (Eq, Show)
