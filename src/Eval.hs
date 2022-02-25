@@ -17,16 +17,6 @@ import Text.Read (look)
 import           Data.Tuple
 import Data.Tree (flatten)
 
--- The model
-data Model = Model {
-    states       :: [State],
-    transitions  :: [Transition],
-    valuations   :: [Valuation] 
-} deriving Show
-
-
--- Main y parse monad
--- Falta ver que devolver en ctlexp
 -- pprinter para errores y ver si falta algun error
 
 type Env = ([State], [Transition], [Valuation])
@@ -48,6 +38,11 @@ instance Monad StateError where
 instance MonadError StateError where
   throw e = StateError (\s -> (Left e, s))
 
+getMissingStateTrans :: [State] -> [(State, State)] -> [State]
+getMissingStateTrans s values = let unz = unzip values in (union s (fst unz) \\ s) ++ (union s (snd unz) \\ s)
+
+getMissingStateVals :: [State] -> [(State, State)] -> [State]
+getMissingStateVals s values = let unz = unzip values in (union s (snd unz) \\ s)
 
 instance MonadState StateError where
   lookforStates = StateError (\z@(s, _, _) -> (Right s, z))
@@ -57,10 +52,10 @@ instance MonadState StateError where
   lookforValuations v = StateError (\z@(_, _, r) -> (Right (foldl (\xs (o, d) -> if v == o then d:xs else xs) [] r), z))
 
   updateStates values = StateError (\(s, t, v) -> (Right (), (nub (s ++ values), t, v)))
+   
+  updateTransitions values = StateError (\z@(s, t, v) -> let missing = getMissingStateTrans s values in if null missing then (Right (), (s, nub (t ++ values), v)) else (Left (UndefState (head missing)), z))
   
-  updateTransitions values = StateError (\z@(s, t, v) -> if foldl (\x (o, d) -> (elem o s) && (elem d s) && x) True values then (Right (), (s, nub (t ++ values), v)) else (Left UndefState, z))
-  
-  updateValuations values = StateError (\z@(s, t, v) -> if foldl (\x (o, d) -> (elem d s) && x) True values then (Right (), (s, t, nub (v ++ values))) else (Left (UndefState), z))
+  updateValuations values = StateError (\z@(s, t, v) -> let missing = getMissingStateVals s values in if null missing then (Right (), (s, nub (t ++ values), v)) else (Left (UndefState (head missing)), z))
 
 -- Para calmar al GHC
 instance Functor StateError where

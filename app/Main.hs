@@ -18,18 +18,18 @@ import Parse
 
 import Eval
 --import Eval
-import Data.Set
-import Data.List
 import Common
 
 --import PPrint
 
-parseModel :: String -> Comm
-parseModel contents = func $ lexerComm contents
+showError :: Error -> String
+showError (UndefState v) = "Error: Missing \"State\": " ++ v
 
-evalModel contents = case (eval contents initEnv) of
-                            (Left err, env') -> (print err)
-                            (Right s, env') -> print s
+rstrip :: String -> String
+rstrip = reverse . dropWhile isSpace . reverse
+
+ctlPrint :: String -> String -> IO ()
+ctlPrint line ss = putStrLn ("Estados del modelo que satisfacen \"" ++ (Data.List.drop 7 line) ++ "\" = " ++ ss)
 
 main :: IO ()
 main = do args <- getArgs
@@ -41,21 +41,23 @@ main = do args <- getArgs
                    let fileLines = lines contents
                    processFile fileLines initE
                else 
-                 do putStrLn "ERROR: The file extension is not valid, make sure you are giving a .ctl file\n"
+                 do putStrLn "ERROR: The file extension is not valid, make sure you are giving a .ctl file"
           else 
-            do putStrLn "ERROR: No file\n"
+            do putStrLn "ERROR: No file"
+
+
 
 processFile [] env = putStr "Archivo parseado correctamente\n"
 processFile (x:xs) env = case x of
                           ""   -> processFile xs env
                           -- Se elimina el \n, por eso init
                           line -> do case parseModel (rstrip line) of
+                                       (ParseError error) -> do putStr error
+                                                                return ()
                                        Exit -> return ()
                                        x    -> do case eval x env of
-                                                   (Left err, env') -> do putStr "Poner error aca\n"
-                                                   (Right s, env') ->  do case s of
+                                                   (Left err, env') -> do putStrLn (showError err)
+                                                   (Right s, env') -> do case s of
                                                                              "" -> processFile xs env'
-                                                                             ss -> do putStrLn ss
+                                                                             ss -> do ctlPrint line ss
                                                                                       processFile xs env'
-rstrip :: String -> String
-rstrip = reverse . dropWhile isSpace . reverse
