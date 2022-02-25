@@ -35,7 +35,9 @@ import Data.List
 
 %name func 
 %tokentype { Token } 
-%error { parseError }
+-- %error { parseError }
+%monad { E } { thenE } { returnE }
+
 
 %token
     PR          { TPr $$ }
@@ -69,6 +71,10 @@ import Data.List
     Transitions { TTransitions }
     Valuations  { TValuations }
     Exp         { TExp }
+    Exit        { TExit }
+    ErrorC      { TErrC }
+    ErrorM      { TErrM }
+    ErrorE      { TErrE }
 
 %left '&' '|' 
 %left '->' 
@@ -80,7 +86,8 @@ fields :: { Comm }
 fields :  States      sts     { States $2 }  
        |  Transitions trns    { Transitions $2 } 
        |  Valuations  vals    { Valuations $2 } 
-       |  Exp         ctl     { CTL $2 }        
+       |  Exp         ctl     { CTL $2 }
+       |  Exit                { Exit }
 
 -- States -----------------------------------------------------
 sts : '[' states ']'    { $2 }
@@ -163,34 +170,47 @@ data Token =  TPr String
             | TValuations
             | TString String
             | TExp
+            | TExit
+            | TErrC
+            | TErrM
+            | TErrE
 
-            deriving Show
+            deriving (Show, Eq)
 
-parseError :: [Token] -> a
-parseError _ = error "Parse error"
+parseModel :: String -> Comm
+parseModel contents = case func $ lexerComm contents of
+                        Ok ctl -> ctl
+                        Failed error -> ParseError error
+
+-- parseError :: [Token] -> a
+happyError tokens | (elem TErrC tokens) = failE "Comm error\n"
+                  | (elem TErrM tokens) = failE "Model error\n"
+                  | (elem TErrE tokens) = failE "Exp error\n"
+                  | otherwise = failE "No deberias haber llegado aca\n"
 
 -- Main lexer
 lexerComm :: String -> [Token]
 lexerComm [] = []
 lexerComm cs@(c:cc) | isSpace c = lexerComm cc
                     | otherwise = case span isAlphaNum cs of
+                                       ("Exit", rest) -> [TExit]
                                        ("STATES", rest) -> TStates : lexerModel rest
                                        ("TRANSITIONS", rest) -> TTransitions : lexerModel rest
                                        ("VALUATIONS", rest) -> TValuations : lexerModel rest
                                        ("CTLEXP", rest) -> TExp : lexerExpr rest
-                                       (v, rest) -> parseError []
+                                       otherwise -> [TErrC]
 
 lexerModel [] = []
 lexerModel cs@(c:cc) | isSpace c = lexerModel cc
                      | c == '['  = TBracketL : lexerModel cc
                      | c == ']'  = TBracketR : lexerModel cc
                      | c == ','  = TComma : lexerModel cc
-                     | c == '('  = TParenLeft: lexerModel cc
-                     | c == ')'  = TParenRight: lexerModel cc
-                     | c == ')'  = TParenRight: lexerModel cc
+                     | c == '('  = TParenLeft : lexerModel cc
+                     | c == ')'  = TParenRight : lexerModel cc
+                     | c == ')'  = TParenRight : lexerModel cc
                      | otherwise = case span isAlphaNum cs of
                                         (v, rest) -> TString v : lexerModel rest
-                                        otherwise -> parseError []
+                                        otherwise -> [TErrM] 
 
 lexerExpr [] = []
 lexerExpr cs@(c:cc)  | isSpace c = lexerExpr cc
@@ -217,5 +237,5 @@ lexerExpr cs@(c:cc)  | isSpace c = lexerExpr cc
                                         ('E':ss) -> TExists : lexerExpr ss
                                         otherwise      -> case span isAlphaNum cs of
                                                                (v, rest) -> (TPr v) : lexerExpr rest
-                                                               otherwise -> parseError []
+                                                               otherwise -> [TErrE]
 }
