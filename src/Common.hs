@@ -26,6 +26,6 @@ data CTL =  Prop Prop
           | Then CTL CTL  -- Or (Not ctl1) ctl2
           deriving Show
 
-data Comm = CTL CTL | States [State] | Valuations [Valuation] | Transitions [Transition] deriving (Show)
+data Comm = CTL CTL | States [State] | Valuations [Valuation] | Transitions [Transition] | Exit deriving (Show)
 
 data Error = OperOverEmpty | UndefState deriving (Eq, Show)

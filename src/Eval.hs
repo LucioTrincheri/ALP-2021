@@ -25,9 +25,9 @@ data Model = Model {
 } deriving Show
 
 
--- Ver si es mejor cambiar lookforTransitions a lista de tuplas en vez de lista de transiciones posibles
 -- Main y parse monad
-
+-- Falta ver que devolver en ctlexp
+-- pprinter para errores y ver si falta algun error
 
 type Env = ([State], [Transition], [Valuation])
 
@@ -76,7 +76,7 @@ eval comm env = runStateError (evalComm comm) env
 
 evalComm :: (MonadState m, MonadError m) => Comm -> m String
 evalComm (CTL exp) = do x <- evalExp exp -- Ver que hacer con el string
-                        return "Bien"
+                        return (show x)
 evalComm (States states) = do updateStates states
                               return "" 
 evalComm (Valuations valuations) = do updateValuations valuations

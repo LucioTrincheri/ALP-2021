@@ -201,8 +201,6 @@ lexerExpr cs@(c:cc)  | isSpace c = lexerExpr cc
                      | c == ']'  = TBracketR : lexerExpr cc
                      | c == '('  = TParenLeft : lexerExpr cc
                      | c == ')'  = TParenRight : lexerExpr cc
-                     | c == 'A'  = TAll : lexerExpr cc
-                     | c == 'E'  = TExists : lexerExpr cc
                      | c == 'U'  = TUntil : lexerExpr cc
                      | otherwise = case cs of
                                         ('B':('T':ss)) -> TBottom : lexerExpr ss
@@ -215,6 +213,8 @@ lexerExpr cs@(c:cc)  | isSpace c = lexerExpr cc
                                         ('A':('G':ss)) -> TAGlobal : lexerExpr ss
                                         ('E':('G':ss)) -> TEGlobal : lexerExpr ss
                                         ('A':('X':ss)) -> TANext : lexerExpr ss
+                                        ('A':ss) -> TAll : lexerExpr ss
+                                        ('E':ss) -> TExists : lexerExpr ss
                                         otherwise      -> case span isAlphaNum cs of
                                                                (v, rest) -> (TPr v) : lexerExpr rest
                                                                otherwise -> parseError []
