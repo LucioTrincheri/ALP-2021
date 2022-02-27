@@ -2,7 +2,6 @@ module Eval where
 
 import           Common
 import           Monads
---import           PrettierPrinter
 import           Data.Maybe
 import           Data.Foldable
 import           Data.List
@@ -15,15 +14,8 @@ import           Control.Monad                  ( liftM
 import Text.Read (look)
 
 import           Data.Tuple
-import Data.Tree (flatten)
 
--- pprinter para errores y ver si falta algun error
-
-type Env = ([State], [Transition], [Valuation])
-
--- Entorno nulo
-initEnv :: Env
-initEnv = ([],[],[])
+-- Inicio de las instancias y funciones relacionadas a monadas
 
 newtype StateError a = StateError { runStateError :: Env -> (Either Error a, Env) }
 
@@ -38,24 +30,32 @@ instance Monad StateError where
 instance MonadError StateError where
   throw e = StateError (\s -> (Left e, s))
 
+-- Dada una lista de estados 's', y una lista de transiciones, devuelve la lista de estados que sean parte de las transiciones pero no de 's' 
 getMissingStateTrans :: [State] -> [(State, State)] -> [State]
 getMissingStateTrans s values = let unz = unzip values in (union s (fst unz) \\ s) ++ (union s (snd unz) \\ s)
 
+-- Dada una lista de estados 's', y una lista de valuaciones, devuelve la lista de estados que sean parte de las valuaciones pero no de 's' 
 getMissingStateVals :: [State] -> [(State, State)] -> [State]
 getMissingStateVals s values = let unz = unzip values in (union s (snd unz) \\ s)
 
 instance MonadState StateError where
   lookforStates = StateError (\z@(s, _, _) -> (Right s, z))
 
-  lookforTransitions v = StateError (\z@(_, t, _) -> (Right (foldl (\xs (o, d) -> if v == o then d:xs else xs) [] t), z))
+  lookforTransitions value = StateError (\z@(_, t, _) -> (Right (foldl (\xs (o, d) -> if value == o then d:xs else xs) [] t), z))
   
-  lookforValuations v = StateError (\z@(_, _, r) -> (Right (foldl (\xs (o, d) -> if v == o then d:xs else xs) [] r), z))
+  lookforValuations value = StateError (\z@(_, _, v) -> (Right (foldl (\xs (o, d) -> if value == o then d:xs else xs) [] v), z))
 
   updateStates values = StateError (\(s, t, v) -> (Right (), (nub (s ++ values), t, v)))
    
-  updateTransitions values = StateError (\z@(s, t, v) -> let missing = getMissingStateTrans s values in if null missing then (Right (), (s, nub (t ++ values), v)) else (Left (UndefState (head missing)), z))
+  updateTransitions values = StateError (\z@(s, t, v) -> let missing = getMissingStateTrans s values 
+                                                         in if null missing 
+                                                            then (Right (), (s, nub (t ++ values), v))  -- Si todos los estados son validos, actualiza el env
+                                                            else (Left (UndefState (head missing)), z)) -- Si hay al menos un estado invalido, devuelvo el error con el estado
   
-  updateValuations values = StateError (\z@(s, t, v) -> let missing = getMissingStateVals s values in if null missing then (Right (), (s, nub (t ++ values), v)) else (Left (UndefState (head missing)), z))
+  updateValuations values = StateError (\z@(s, t, v) -> let missing = getMissingStateVals s values 
+                                                        in if null missing 
+                                                           then (Right (), (s, t , nub (v ++ values)))  -- Si todos los estados son validos, actualiza el env
+                                                           else (Left (UndefState (head missing)), z))  -- Si hay al menos un estado invalido, devuelvo el error con el estado
 
 -- Para calmar al GHC
 instance Functor StateError where
@@ -68,7 +68,6 @@ instance Applicative StateError where
 eval :: Comm -> Env -> (Either Error String, Env)
 eval comm env = runStateError (evalComm comm) env
 
-
 evalComm :: (MonadState m, MonadError m) => Comm -> m String
 evalComm (CTL exp) = do x <- evalExp exp -- Ver que hacer con el string
                         return (show x)
@@ -78,7 +77,8 @@ evalComm (Valuations valuations) = do updateValuations valuations
                                       return ""
 evalComm (Transitions transitions) = do updateTransitions transitions
                                         return ""
-
+-- Caso para Exit y ParseError para que el IDE no indique casos no exhaustivos
+evalComm _ = return ""
 
 -- evalExp es la implementacion del algoritmo SAT-solver
 evalExp :: (MonadState m, MonadError m) => CTL -> m [State]
@@ -110,7 +110,7 @@ evalExp (AF s) = evalExp (AU Top s)
 evalExp (EG s) = evalExp (Not (AF (Not s)))
 evalExp (AG s) = evalExp (Not (EF (Not s)))
 
-
+-- Funciones de EX y AX
 -- Dado un conjunto de estados que satisfacen la formula, retorna cuales de ellos cumplen EX
 existsNext :: (MonadState m, MonadError m) => [State] -> m [State]
 existsNext sE = do states <- lookforStates
@@ -129,6 +129,7 @@ allNext sE = do states <- lookforStates
                 let statesThatCond = map fst transCond
                 return statesThatCond
 
+-- Funciones de EU y AU. Utilizan EX y AX en el proceso.
 existsUntil :: (MonadState m, MonadError m) => [State] -> [State] -> m [State]
 existsUntil sE sP = do existsN <- existsNext sP
                        let sR = union sP (intersect sE existsN)

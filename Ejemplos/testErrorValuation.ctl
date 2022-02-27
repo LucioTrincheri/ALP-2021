@@ -1,2 +1,0 @@
-STATES [s0, s1]
-VALUATIONS [(a, s2)]

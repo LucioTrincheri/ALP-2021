@@ -182,11 +182,10 @@ parseModel contents = case func $ lexerComm contents of
                         Ok ctl -> ctl
                         Failed error -> ParseError error
 
--- parseError :: [Token] -> a
-happyError tokens | (elem TErrC tokens) = failE "Comm error\n"
-                  | (elem TErrM tokens) = failE "Model error\n"
-                  | (elem TErrE tokens) = failE "Exp error\n"
-                  | otherwise = failE "No deberias haber llegado aca\n"
+happyError tokens | (head tokens == TErrC) = failE "Caracter invalido en comando. Ej comando: \"STATES\", \"TRANSITIONS\", \"VALUATIONS\", \"CTLEXP\", \"Exit\".\n"
+                  | (head tokens == TErrM) = failE "Caracter invalido en modelo. Expresiones permitidas en el manual de uso.\n"
+                  | (head tokens == TErrE) = failE "Caracter invalido en formula. Expresiones permitidas en el manual de uso.\n"
+                  | otherwise = failE "Caracteres validos pero expresiones mal formadas. Referirse al manual de uso para ver el formato de las expresiones.\n"
 
 -- Main lexer
 lexerComm :: String -> [Token]
@@ -209,7 +208,7 @@ lexerModel cs@(c:cc) | isSpace c = lexerModel cc
                      | c == ')'  = TParenRight : lexerModel cc
                      | c == ')'  = TParenRight : lexerModel cc
                      | otherwise = case span isAlphaNum cs of
-                                        (v, rest) -> TString v : lexerModel rest
+                                        (v, rest) -> if v /= "" then TString v : lexerModel rest else [TErrM] 
                                         otherwise -> [TErrM] 
 
 lexerExpr [] = []
@@ -236,6 +235,6 @@ lexerExpr cs@(c:cc)  | isSpace c = lexerExpr cc
                                         ('A':ss) -> TAll : lexerExpr ss
                                         ('E':ss) -> TExists : lexerExpr ss
                                         otherwise      -> case span isAlphaNum cs of
-                                                               (v, rest) -> (TPr v) : lexerExpr rest
+                                                               (v, rest) -> if v /= "" then (TPr v) : lexerExpr rest else [TErrE]
                                                                otherwise -> [TErrE]
 }
