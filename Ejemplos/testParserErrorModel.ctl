@@ -1,0 +1,2 @@
+STATES [s0, s1]
+TRANSITIONS < [(s0, s1)]
