@@ -69,7 +69,7 @@ eval :: Comm -> Env -> (Either Error String, Env)
 eval comm env = runStateError (evalComm comm) env
 
 evalComm :: (MonadState m, MonadError m) => Comm -> m String
-evalComm (CTL exp) = do x <- evalExp exp -- Ver que hacer con el string
+evalComm (CTL exp) = do x <- evalExp exp
                         return (show x)
 evalComm (States states) = do updateStates states
                               return "" 

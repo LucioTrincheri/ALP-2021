@@ -10,9 +10,9 @@ import           System.Console.Haskeline
 import qualified Control.Monad.Catch           as MC
 import           System.Environment
 import           System.IO               --hiding ( print )
-import           Text.PrettyPrint.HughesPJ      ( render
-                                                , text
-                                                )
+--import           Text.PrettyPrint.HughesPJ      ( render
+--                                                , text
+--                                                )
 import Control.Monad.IO.Class
 import Parse
 import Eval
