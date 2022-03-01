@@ -4,4 +4,4 @@ VALUATIONS [(a, s1), (a, s2), (a, s3), (b, s2), (b, s4), (b, s5)]
 CTLEXP EG AF !b
 CTLEXP a
 VALUATIONS [(a, s4)]
-CTLEXP a
+CTLEXP a & (a)
