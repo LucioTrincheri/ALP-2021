@@ -2,7 +2,6 @@ module Eval where
 
 import           Common
 import           Monads
-import           Data.Maybe
 import           Data.Foldable
 import           Data.List
 import           Prelude                 hiding ( fst
@@ -11,9 +10,7 @@ import           Prelude                 hiding ( fst
 import           Control.Monad                  ( liftM
                                                 , ap
                                                 )
-import Text.Read (look)
-
-import           Data.Tuple
+import Data.Tuple ( fst, snd )
 
 -- Inicio de las instancias y funciones relacionadas a monadas
 
@@ -65,19 +62,22 @@ instance Applicative StateError where
   pure  = return
   (<*>) = ap
 
+-- Fin de funciones e instanciamiento de monadas
+
+-- Funcion eval llamada desde el main
 eval :: Comm -> Env -> (Either Error String, Env)
 eval comm env = runStateError (evalComm comm) env
 
 evalComm :: (MonadState m, MonadError m) => Comm -> m String
-evalComm (CTL exp) = do x <- evalExp exp
-                        return (show x)
+evalComm (CTL expr) = do x <- evalExp expr
+                         return (show x)
 evalComm (States states) = do updateStates states
                               return "" 
 evalComm (Valuations valuations) = do updateValuations valuations
                                       return ""
 evalComm (Transitions transitions) = do updateTransitions transitions
                                         return ""
--- Caso para Exit y ParseError para que el IDE no indique casos no exhaustivos
+-- Caso para Exit y ParseError para que el IDE no indique casos no exhaustivos. No es necesario
 evalComm _ = return ""
 
 -- evalExp es la implementacion del algoritmo SAT-solver
@@ -103,6 +103,7 @@ evalExp (EU s p) = do sE <- evalExp s
 evalExp (AU s p) = do sE <- evalExp s
                       sP <- evalExp p
                       allUntil sE sP
+-- Expresiones derivadas
 evalExp Top = evalExp (Not Bottom)
 evalExp (Then s p) = evalExp (Or (Not s) p)
 evalExp (EF s) = evalExp (EU Top s)
@@ -116,7 +117,7 @@ existsNext :: (MonadState m, MonadError m) => [State] -> m [State]
 existsNext sE = do states <- lookforStates
                    x <- mapM lookforTransitions states 
                    let stateAndTrans = zip states x -- [(a,[a])]
-                   let transCond = filter (\(originalState, trans) -> trans /= (trans \\ sE)) stateAndTrans
+                   let transCond = filter (\(_, trans) -> trans /= (trans \\ sE)) stateAndTrans
                    let statesThatCond = map fst transCond
                    return statesThatCond
 
@@ -125,7 +126,7 @@ allNext :: (MonadState m, MonadError m) => [State] -> m [State]
 allNext sE = do states <- lookforStates
                 x <- mapM lookforTransitions states 
                 let stateAndTrans = zip states x -- [(a,[a])]
-                let transCond = filter (\(originalState, trans) -> null (trans \\ sE)) stateAndTrans
+                let transCond = filter (\(_, trans) -> null (trans \\ sE)) stateAndTrans
                 let statesThatCond = map fst transCond
                 return statesThatCond
 

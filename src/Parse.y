@@ -1,30 +1,3 @@
--- Se puede ingresar por consola o por archivo, cada linea se parsea por separado por lo cual se puede ingresar
--- mas de una linea repetida, ej 2 States etc. Luego de ingresar una expresion, se calcula la tabla de verdad y se puede seguir trabajando. 
-{-
-States [s1, s2]
-
-States [s3]
-
-States [4,5,6]
-
-Expresion ... Execute
-
-States []
-
-M = (S, T, V)
-States stateList ([string, string ...])
-Transitions trasitionList ([(string, string), (string, string) ...])
-Valuations valuationList [(state, variable), (state, variable2)]
-Expression exp
-
-
-
-Expresion ..
-
-
--}
-
-
 { 
 module Parse where
 
@@ -35,9 +8,7 @@ import Data.List
 
 %name func 
 %tokentype { Token } 
--- %error { parseError }
 %monad { E } { thenE } { returnE }
-
 
 %token
     PR          { TPr $$ }
@@ -177,11 +148,13 @@ data Token =  TPr String
 
             deriving (Show, Eq)
 
+-- Funcion llamada de main encargada de lexear y parsear una linea
 parseModel :: String -> Comm
 parseModel contents = case func $ lexerComm contents of
                         Ok ctl -> ctl
                         Failed error -> ParseError error
 
+-- Funcion requerida por el monada encargado de los errores de parseo. Se encarga de imprimir los mismos
 happyError tokens | (head tokens == TErrC) = failE "Caracter invalido en comando. Ej comando: \"STATES\", \"TRANSITIONS\", \"VALUATIONS\", \"CTLEXP\", \"Exit\".\n"
                   | (head tokens == TErrM) = failE "Caracter invalido en modelo. Expresiones permitidas en el manual de uso.\n"
                   | (head tokens == TErrE) = failE "Caracter invalido en formula. Expresiones permitidas en el manual de uso.\n"

@@ -1,5 +1,4 @@
 module Common where
-import Data.Set
 
 type Prop = String
 type State = String
@@ -35,9 +34,6 @@ data CTL =  Prop Prop
 data Comm = CTL CTL | States [State] | Valuations [Valuation] | Transitions [Transition] | Exit | ParseError String deriving (Show)
 
 data Error = UndefState State deriving (Eq, Show)
-
-
-
 
 -- Codigo para manejar errores de parseo. Proveniente de https://www.haskell.org/happy/doc/html/sec-monads.html#sec-exception
 data E a = Ok a | Failed String

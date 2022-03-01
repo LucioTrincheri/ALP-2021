@@ -1,21 +1,12 @@
 module Main where
 
 import System.Environment (getArgs)
-import           Control.Monad.Except
-import           Data.Char
+import Control.Monad.Except
+import Data.Char ( isSpace )
 import           Data.List
-import           Data.Maybe
 import           Prelude                 hiding ( print )
-import           System.Console.Haskeline
-import qualified Control.Monad.Catch           as MC
-import           System.Environment
-import           System.IO               --hiding ( print )
---import           Text.PrettyPrint.HughesPJ      ( render
---                                                , text
---                                                )
-import Control.Monad.IO.Class
-import Parse
-import Eval
+import Parse ( parseModel )
+import Eval ( eval )
 import Common
 
 -- Funcion para imprimir errores de falta de estados
@@ -55,18 +46,18 @@ processFile (x:xs) env = case x of
                           -- En caso de que se lea una linea
                           line -> do case parseModel (rstrip line) of
                                        -- Si el parser detecta un error, lo muestro en pantalla y finalizo el programa
-                                       (ParseError error) -> do putStr error
-                                                                return ()
+                                       (ParseError err) -> do putStr err
+                                                              return ()
                                        -- Exit del programa
                                        Exit -> return ()
                                        -- En caso de parseo valido
-                                       x    -> do case eval x env of
-                                                   -- Si la evaluacion llega a un error, lo muestro por pantalla y finalizo el programa
-                                                   (Left err, env') -> do putStrLn (showError err)
-                                                   -- En caso de evaluacion valida
-                                                   (Right s, env') -> do case s of
-                                                                             -- Si no retorna nada (cuando se añade al estado) recursiono
-                                                                             "" -> processFile xs env'
-                                                                             -- Si devuelve algo (cuando es una formula) lo imprimo por pantalla y recursiono
-                                                                             ss -> do ctlPrint line ss
-                                                                                      processFile xs env'
+                                       parsed -> do case eval parsed env of
+                                                    -- Si la evaluacion llega a un error, lo muestro por pantalla y finalizo el programa
+                                                      (Left err, _) -> do putStrLn (showError err)
+                                                    -- En caso de evaluacion valida
+                                                      (Right s, env') -> do case s of
+                                                                              -- Si no retorna nada (cuando se añade al estado) recursiono
+                                                                              "" -> processFile xs env'
+                                                                              -- Si devuelve algo (cuando es una formula) lo imprimo por pantalla y recursiono
+                                                                              ss -> do ctlPrint line ss
+                                                                                       processFile xs env'
