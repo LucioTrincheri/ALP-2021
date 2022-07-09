@@ -1,0 +1,13 @@
+-- Ejercicio 2
+
+-- λx. x → λ0 = conversion (Abs "x" (LVar "x"))
+def ej2_1 = \x . x
+
+-- λx. λy. λz. x → λλλ2 = conversion (Abs "x" (Abs "y" (Abs "z" (LVar "x"))))
+def ej2_2 = \x y z . x
+
+-- λy.(λx y.x) y → λ(λλ1) 0 = conversion (Abs "y" (App (Abs "x" (Abs "y" (LVar "x"))) (LVar "y")))
+def ej2_3 = \y . (\x y . x) y
+
+-- λx. λy. x (λy. y x) → λλ1 (λ0 2) = conversion (Abs "x" (Abs "y" (App (LVar "x") (Abs "y" (App (LVar "y") (LVar "x"))))))
+def ej2_4 = \x y . x (\y . y x)

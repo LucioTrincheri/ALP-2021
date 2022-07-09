@@ -1,0 +1,30 @@
+-- if
+def if = \c t e . c t e
+
+-- not
+def not = \x . if x false true
+
+def is1 = \n . (and (not (is0 n)) (is0 (pred n)))
+
+-- Funciones de comparación:
+-- equals: 
+def equals' = \f x y . if (or (and (not (is1 x)) (is1 y)) (and (is1  x) (not(is1  y)))) false (f (pred x) (pred y))
+def equals = Y (\f x y . if (and (is0 x) (is0 y)) true (equals' f x y))
+
+-- gr: Dado dos numeros, indica si el primero es mayor estricto que el segundo.
+def gr = Y (\f x y . if (is0 x) false (if (is0 y) true (f (pred x) (pred y))))
+
+-- Operaciones entre naturales:
+-- Resta: Dados dos números devuelve la resta parcial.
+def sub = Y (\f n x . if (is0 x) n (if (is0 n) (f 0 (pred x)) (f (pred n) (pred x))))
+
+-- Divisible: Dados dos números indica si el primero es divisible por el segundo.
+def divisible =  Y (\f n x . if (gr n x) (f (sub n x) x) (equals n x))
+
+-- Divisor: Dados dos números divide el primero por el segundo.
+def dividir = Y (\f n x . if (gr x n) 0 (suc (f (sub n x) x)))
+
+-- esPrimo': Dado un número, su divisor final y un valor inicial, devuelve si el número tiene algún divisor desde el el valor incial hasta su ultimo divisor.
+def esPrimo' = Y (\f n d x. if (not (gr d x)) false (or (divisible n x) (f n d (suc (suc x)))))
+-- esPrimo: Dado un número se fija si es divisible por 2 o si es divisible por los impares hasta el mismo.
+def esPrimo = \n . if (divisible n 2) (equals n 2) (not (esPrimo' n (dividir n 2) 3))
