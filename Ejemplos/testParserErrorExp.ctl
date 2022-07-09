@@ -1,4 +1,0 @@
-STATES [s0, s1]
-TRANSITIONS [(s0, s1)]
-VALUATIONS [(a, s0)]
-CTLEXP < a
